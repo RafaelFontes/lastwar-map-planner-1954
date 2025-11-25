@@ -1,0 +1,14 @@
+{
+  "name": "season-0-map",
+  "version": "1.0.0",
+  "description": "Map editor for Season 0",
+  "type": "module",
+  "scripts": {
+    "process-map": "node process-map.js",
+    "extract-tiles": "node extract-tiles.js",
+    "extract-tiles-precise": "node extract-tiles-precise.js"
+  },
+  "dependencies": {
+    "canvas": "^3.0.0"
+  }
+}

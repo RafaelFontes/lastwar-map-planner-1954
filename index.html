@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season 0 Map Editor</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Season 0 Map Editor</h1>
+            <div class="zoom-controls">
+                <button id="zoomOut" class="btn-zoom" title="Zoom Out">−</button>
+                <span id="zoomLevel">100%</span>
+                <button id="zoomIn" class="btn-zoom" title="Zoom In">+</button>
+                <button id="resetZoom" class="btn-zoom-reset" title="Reset Zoom">Reset</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-section">
+                <div id="mapContainer"></div>
+            </div>
+
+            <div class="tile-list-section">
+                <div class="tile-list-header">
+                    <h2>Labeled Tiles</h2>
+                    <div class="tile-list-filter">
+                        <input type="text" id="tileFilter" placeholder="Filter by number or name...">
+                    </div>
+                </div>
+                <div class="tile-list-table-container">
+                    <table id="tileListTable">
+                        <thead>
+                            <tr>
+                                <th>Number</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tileListBody">
+                            <tr class="empty-row">
+                                <td colspan="2">No labeled tiles yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="section">
+                    <h2>Tile Editor</h2>
+                    <div id="tileInfo" class="tile-info">
+                        <p class="hint">Click on a tile to edit</p>
+                    </div>
+                    <div id="tileEditor" class="tile-editor" style="display: none;">
+                        <div class="form-group">
+                            <label for="tileNumber">Number:</label>
+                            <input type="number" id="tileNumber" min="0" max="99">
+                        </div>
+                        <div class="form-group">
+                            <label for="tileName">Name:</label>
+                            <input type="text" id="tileName" placeholder="Enter tile name">
+                        </div>
+                        <div class="form-group">
+                            <label for="tileIcon">Icon:</label>
+                            <select id="tileIcon">
+                                <option value="">None</option>
+                                <option value="🏰">Castle 🏰</option>
+                                <option value="⚔️">Sword ⚔️</option>
+                                <option value="🛡️">Shield 🛡️</option>
+                                <option value="👑">Crown 👑</option>
+                                <option value="💎">Gem 💎</option>
+                                <option value="🔥">Fire 🔥</option>
+                                <option value="⭐">Star ⭐</option>
+                                <option value="🎯">Target 🎯</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tileColor">Tile Color:</label>
+                            <input type="color" id="tileColor" value="#f8f9fa">
+                        </div>
+                        <div class="form-group">
+                            <label for="tileComments">Comments:</label>
+                            <textarea id="tileComments" placeholder="Add notes about this tile..." rows="3"></textarea>
+                        </div>
+                        <button id="saveTile" class="btn btn-primary">Save Tile</button>
+                        <button id="clearTile" class="btn btn-secondary">Clear Tile</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="tabs">
+                        <button id="commentsTab" class="tab-button active">Comments</button>
+                        <button id="historyTab" class="tab-button">History</button>
+                    </div>
+
+                    <div id="commentsPanel" class="tab-panel active">
+                        <div id="commentsList" class="comments-list">
+                            <p class="hint">Select a tile to view comments</p>
+                        </div>
+                        <div id="addCommentSection" style="display: none;">
+                            <div class="form-group">
+                                <textarea id="newComment" placeholder="Add a comment..." rows="3"></textarea>
+                            </div>
+                            <button id="addComment" class="btn btn-primary">Add Comment</button>
+                        </div>
+                    </div>
+
+                    <div id="historyPanel" class="tab-panel">
+                        <div id="historyList" class="history-list">
+                            <p class="hint">No changes yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=7"></script>
+</body>
+</html>
