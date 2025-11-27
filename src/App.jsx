@@ -6,7 +6,6 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { useMapEditor } from './hooks/useMapEditor';
 import { useCanvasControls } from './hooks/useCanvasControls';
 import { useAuth } from './contexts/AuthContext';
-import styles from './App.module.css';
 
 function App() {
   const { user } = useAuth();
@@ -65,17 +64,19 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading map data...</div>
+      <div className="w-full h-screen flex flex-col bg-discord-dark overflow-hidden">
+        <div className="flex items-center justify-center flex-1 text-xl text-discord-text-muted">
+          Loading map data...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
+    <div className="w-full h-screen flex flex-col bg-discord-dark overflow-hidden">
       <Header scale={scale} onZoom={zoom} />
 
-      <div className={styles.mainContent}>
+      <div className="flex flex-1 overflow-hidden max-md:flex-col">
         <MapCanvas
           tileGeometry={tileGeometry}
           tiles={tiles}

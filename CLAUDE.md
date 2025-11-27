@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Lastwar Map Editor - A React-based interactive map editor for a tile-based game map. The application allows users to edit tile properties (name, number, icon, color), add comments, and track edit history.
+Last War Project Explorer - A React-based interactive map explorer for a tile-based game map. The application allows users to edit tile properties (name, number, icon, color), add comments, and track edit history.
 
 ## Commands
 

@@ -1,8 +1,7 @@
 import { useCallback, useRef } from 'react';
-import { Stage, Layer, Line, Text, Group } from 'react-konva';
+import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
 import { polygonToPoints, calculatePolygonCentroid, constrainPointToPolygon } from '../../utils/geometryUtils';
 import { getContrastingTextColor } from '../../utils/colorUtils';
-import styles from './MapCanvas.module.css';
 
 export function MapCanvas({
   tileGeometry,
@@ -57,14 +56,14 @@ export function MapCanvas({
 
   if (!tileGeometry) {
     return (
-      <div className={styles.canvasSection} ref={containerRef}>
-        <div className={styles.loading}>Loading map data...</div>
+      <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
+        <div className="text-discord-text-muted text-base italic">Loading map data...</div>
       </div>
     );
   }
 
   return (
-    <div className={styles.canvasSection} ref={containerRef}>
+    <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
       <Stage
         ref={stageRef}
         width={containerWidth}
@@ -79,6 +78,18 @@ export function MapCanvas({
         onMouseLeave={handleMouseLeave}
         style={{ cursor: isPanning ? 'grabbing' : 'default' }}
       >
+        {/* Background Layer - covers actual tile area */}
+        <Layer>
+          <Rect
+            x={0}
+            y={0}
+            width={685}
+            height={560}
+            fill="#f8f9fa"
+            listening={false}
+          />
+        </Layer>
+
         {/* Map Layer - Tile shapes */}
         <Layer>
           {tileGeometry.tiles.map((tileInfo) => {
@@ -147,8 +158,8 @@ function TileShape({ tileInfo, tileData, isSelected, isPanning, onClick }) {
     <Line
       points={points}
       fill={fillColor}
-      stroke="#333"
-      strokeWidth={2}
+      stroke="rgba(0, 0, 0, 0.15)"
+      strokeWidth={1}
       closed={true}
       onClick={onClick}
       onMouseEnter={(e) => {
