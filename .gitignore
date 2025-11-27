@@ -1,7 +1,8 @@
 node_modules
 .DS_Store
 map-clean.png
-tile-data.json
+/tile-data.json
+!/public/tile-data.json
 tiles-visualization.png
 .playwright-mcp
 dist
