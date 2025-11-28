@@ -37,6 +37,7 @@
  * @property {string} [allianceName] - Alliance name
  * @property {string} [allianceColor] - Alliance color (hex)
  * @property {number} [tileId] - Tile ID
+ * @property {number} [day] - Day number
  */
 
 /**
@@ -202,6 +203,15 @@ export class IHistoryRepository {
    * @returns {Promise<void>}
    */
   async clear() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Clear history for a specific day
+   * @param {number} day - Day number
+   * @returns {Promise<void>}
+   */
+  async clearForDay(day) {
     throw new Error('Not implemented');
   }
 

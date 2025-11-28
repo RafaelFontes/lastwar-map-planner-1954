@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
 import { polygonToPoints, calculatePolygonCentroid } from '../../utils/geometryUtils';
 import { getContrastingTextColor } from '../../utils/colorUtils';
@@ -19,6 +19,34 @@ export function MapCanvas({
   onPanMove,
   onPanEnd
 }) {
+  // Track container dimensions in state to trigger re-renders when they change
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+
+  // Update dimensions when container changes or on resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { clientWidth, clientHeight } = containerRef.current;
+        setDimensions(prev => {
+          if (prev.width !== clientWidth || prev.height !== clientHeight) {
+            return { width: clientWidth, height: clientHeight };
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Initial measurement
+    updateDimensions();
+
+    // Use ResizeObserver for more reliable dimension tracking
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [containerRef]);
   // Handle mouse events for panning
   const handleMouseDown = useCallback((e) => {
     const evt = e.evt;
@@ -64,10 +92,6 @@ export function MapCanvas({
     onPanEnd();
   }, [onPanEnd]);
 
-  // Get container dimensions
-  const containerWidth = containerRef.current?.clientWidth || 800;
-  const containerHeight = containerRef.current?.clientHeight || 600;
-
   if (!tileGeometry) {
     return (
       <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
@@ -80,8 +104,8 @@ export function MapCanvas({
     <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
       <Stage
         ref={stageRef}
-        width={containerWidth}
-        height={containerHeight}
+        width={dimensions.width}
+        height={dimensions.height}
         scaleX={scale}
         scaleY={scale}
         x={position.x}
@@ -138,13 +162,17 @@ export function MapCanvas({
               listening={false}
             />
           )}
-          {/* Selected tile highlight - red */}
+          {/* Selected tile highlight - yellow glow */}
           {selectedTile && (
             <Line
               points={polygonToPoints(selectedTile.polygon)}
-              fill="rgba(220, 38, 38, 0.4)"
+              stroke="#fbbf24"
+              strokeWidth={4}
               closed={true}
               listening={false}
+              shadowColor="#fbbf24"
+              shadowBlur={15}
+              shadowOpacity={0.8}
             />
           )}
         </Layer>

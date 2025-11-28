@@ -125,11 +125,12 @@ export function GameStateProvider({ children }) {
     }
 
     try {
-      // For admin, pass the selected alliance ID so we can claim on their behalf
+      // For admin, pass the selected alliance ID and day so we can claim on their behalf
       const { data, error } = await supabase.rpc('claim_tile', {
         p_tile_id: tileId,
         p_is_admin: isAdmin,
         p_alliance_id: isAdmin ? alliance.id : null,
+        p_day: isAdmin ? selectedDay : null,
       });
 
       if (error) {
@@ -162,6 +163,7 @@ export function GameStateProvider({ children }) {
           user: displayName || 'Unknown',
           allianceName: alliance.name,
           allianceColor: allianceColor,
+          day: selectedDay,
         });
       } catch (historyError) {
         console.error('Error logging claim history:', historyError);
@@ -176,7 +178,7 @@ export function GameStateProvider({ children }) {
       console.error('Error claiming tile:', error);
       return { success: false, error: error.message };
     }
-  }, [user, alliance, isViewingCurrentDay, displayName, mapEditorService, getAllianceColor]);
+  }, [user, alliance, isViewingCurrentDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
 
   // Clear a tile
   const clearTile = useCallback(async (tileId, isAdmin = false) => {
@@ -189,11 +191,12 @@ export function GameStateProvider({ children }) {
     }
 
     try {
-      // For admin, pass the selected alliance ID
+      // For admin, pass the selected alliance ID and day
       const { data, error } = await supabase.rpc('clear_tile', {
         p_tile_id: tileId,
         p_is_admin: isAdmin,
         p_alliance_id: isAdmin ? alliance.id : null,
+        p_day: isAdmin ? selectedDay : null,
       });
 
       if (error) {
@@ -221,6 +224,7 @@ export function GameStateProvider({ children }) {
           user: displayName || 'Unknown',
           allianceName: alliance.name,
           allianceColor: allianceColor,
+          day: selectedDay,
         });
       } catch (historyError) {
         console.error('Error logging unclaim history:', historyError);
@@ -234,7 +238,7 @@ export function GameStateProvider({ children }) {
       console.error('Error clearing tile:', error);
       return { success: false, error: error.message };
     }
-  }, [user, alliance, isViewingCurrentDay, displayName, mapEditorService, getAllianceColor]);
+  }, [user, alliance, isViewingCurrentDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
 
   // Undo a move
   const undoMove = useCallback(async (moveId) => {

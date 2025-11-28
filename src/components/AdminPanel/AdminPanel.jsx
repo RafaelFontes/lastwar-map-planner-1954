@@ -14,7 +14,7 @@ export function AdminPanel() {
     isAdmin
   } = useAlliance();
   const { toast } = useToast();
-  const { currentDay } = useTimeline();
+  const { currentDay, selectedDay } = useTimeline();
   const mapEditorService = useMapEditorService();
 
   const [newAllianceName, setNewAllianceName] = useState('');
@@ -50,13 +50,13 @@ export function AdminPanel() {
   };
 
   const handleClearHistory = async () => {
-    if (!confirm('Are you sure you want to clear ALL claim history? This cannot be undone.')) {
+    if (!confirm(`Are you sure you want to clear claim history for Day ${selectedDay}? This cannot be undone.`)) {
       return;
     }
     setIsClearing(true);
     try {
-      await mapEditorService.clearHistory();
-      toast.success('History cleared successfully');
+      await mapEditorService.clearHistoryForDay(selectedDay);
+      toast.success(`History for Day ${selectedDay} cleared successfully`);
     } catch (error) {
       console.error('Error clearing history:', error);
       toast.error('Failed to clear history');
@@ -66,7 +66,7 @@ export function AdminPanel() {
   };
 
   const handleClearMoves = async () => {
-    if (!confirm('Are you sure you want to clear ALL moves for today? This will remove all move records but NOT the tile claims.')) {
+    if (!confirm(`Are you sure you want to clear ALL moves for Day ${selectedDay}? This will remove all move records but NOT the tile claims.`)) {
       return;
     }
     setIsClearing(true);
@@ -74,10 +74,10 @@ export function AdminPanel() {
       const { error } = await supabase
         .from('daily_moves')
         .delete()
-        .eq('day', currentDay);
+        .eq('day', selectedDay);
 
       if (error) throw error;
-      toast.success('Moves cleared successfully');
+      toast.success(`Moves for Day ${selectedDay} cleared successfully`);
     } catch (error) {
       console.error('Error clearing moves:', error);
       toast.error('Failed to clear moves');
@@ -268,7 +268,7 @@ export function AdminPanel() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            {isClearing ? 'Clearing...' : 'Clear History'}
+            {isClearing ? 'Clearing...' : `Clear History (Day ${selectedDay})`}
           </button>
 
           {/* Clear Moves */}
@@ -280,7 +280,7 @@ export function AdminPanel() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {isClearing ? 'Clearing...' : 'Clear Moves (Today)'}
+            {isClearing ? 'Clearing...' : `Clear Moves (Day ${selectedDay})`}
           </button>
 
           {/* Edit Max Moves */}

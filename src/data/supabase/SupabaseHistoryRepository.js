@@ -20,7 +20,8 @@ export class SupabaseHistoryRepository extends IHistoryRepository {
       user: row.user_name,
       allianceName: row.alliance_name,
       allianceColor: row.alliance_color,
-      tileId: row.tile_id
+      tileId: row.tile_id,
+      day: row.day
     };
   }
 
@@ -55,7 +56,8 @@ export class SupabaseHistoryRepository extends IHistoryRepository {
         user_name: entry.user || user?.user_metadata?.full_name || user?.email || 'Unknown',
         alliance_name: entry.allianceName || null,
         alliance_color: entry.allianceColor || null,
-        tile_id: entry.tileId || null
+        tile_id: entry.tileId || null,
+        day: entry.day || null
       });
 
     if (error) {
@@ -79,6 +81,21 @@ export class SupabaseHistoryRepository extends IHistoryRepository {
     }
 
     this._cache = [];
+  }
+
+  async clearForDay(day) {
+    const { error } = await supabase
+      .from('history')
+      .delete()
+      .eq('day', day);
+
+    if (error) {
+      console.error('Error clearing history for day from Supabase:', error);
+      throw error;
+    }
+
+    // Invalidate cache
+    this._cache = null;
   }
 
   async saveAll(entries) {

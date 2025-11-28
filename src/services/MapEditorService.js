@@ -203,6 +203,15 @@ export class MapEditorService {
   }
 
   /**
+   * Clear history for a specific day
+   * @param {number} day - Day number
+   * @returns {Promise<void>}
+   */
+  async clearHistoryForDay(day) {
+    await this._historyRepository.clearForDay(day);
+  }
+
+  /**
    * Add a claim history entry
    * @param {Object} params
    * @param {number} params.tileId - Tile ID
@@ -210,9 +219,10 @@ export class MapEditorService {
    * @param {string} params.user - User display name
    * @param {string} params.allianceName - Alliance name
    * @param {string} params.allianceColor - Alliance color
+   * @param {number} [params.day] - Day number (optional)
    * @returns {Promise<void>}
    */
-  async addClaimHistory({ tileId, action, user, allianceName, allianceColor }) {
+  async addClaimHistory({ tileId, action, user, allianceName, allianceColor, day }) {
     const details = `${action === 'claim' ? 'claimed' : 'unclaimed'} tile L${tileId}`;
     const entry = {
       action,
@@ -220,7 +230,8 @@ export class MapEditorService {
       user,
       allianceName,
       allianceColor,
-      tileId
+      tileId,
+      day
     };
     await this._historyRepository.add(entry);
   }
