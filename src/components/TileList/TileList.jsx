@@ -1,38 +1,112 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
-export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onTileClick }) {
-  // Filter to only show claimed tiles and sort by alliance name, then by level number
+export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onTileClick, onTileHover }) {
+  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+  const [selectedLevels, setSelectedLevels] = useState(new Set());
+
+  // Filter to only show claimed tiles
   const claimedTiles = useMemo(() => {
-    // Only include tiles that have an alliance claim
-    const tilesWithClaims = labeledTiles
+    return labeledTiles
       .map(tile => ({
         ...tile,
         claim: tileClaims?.get(tile.id)
       }))
       .filter(tile => tile.claim?.allianceName);
-
-    // Sort by alliance name first, then by number
-    return tilesWithClaims.sort((a, b) => {
-      // First sort by alliance name
-      const allianceCompare = (a.claim.allianceName || '').localeCompare(b.claim.allianceName || '');
-      if (allianceCompare !== 0) return allianceCompare;
-
-      // Then sort by number (as numbers, not strings)
-      const numA = parseInt(a.number) || 0;
-      const numB = parseInt(b.number) || 0;
-      return numA - numB;
-    });
   }, [labeledTiles, tileClaims]);
 
-  // Apply text filter
-  const filteredTiles = useMemo(() => {
-    if (!filter) return claimedTiles;
-    const lowerFilter = filter.toLowerCase();
-    return claimedTiles.filter(tile =>
-      (tile.number && tile.number.toString().includes(lowerFilter)) ||
-      (tile.claim?.allianceName && tile.claim.allianceName.toLowerCase().includes(lowerFilter))
-    );
-  }, [claimedTiles, filter]);
+  // Group tiles by level number
+  const groupedByLevel = useMemo(() => {
+    const groups = new Map();
+
+    claimedTiles.forEach(tile => {
+      const level = tile.number ?? '';
+      if (!groups.has(level)) {
+        groups.set(level, []);
+      }
+      groups.get(level).push(tile);
+    });
+
+    // Sort groups by level number and sort tiles within each group by alliance name
+    const sortedEntries = Array.from(groups.entries())
+      .sort(([a], [b]) => {
+        const numA = parseInt(a) || 0;
+        const numB = parseInt(b) || 0;
+        return numA - numB;
+      })
+      .map(([level, tiles]) => [
+        level,
+        tiles.sort((a, b) => (a.claim.allianceName || '').localeCompare(b.claim.allianceName || ''))
+      ]);
+
+    return sortedEntries;
+  }, [claimedTiles]);
+
+  // Get all available levels for the filter checkboxes
+  const availableLevels = useMemo(() => {
+    return groupedByLevel.map(([level]) => level);
+  }, [groupedByLevel]);
+
+  // Apply text filter and level filter to grouped data
+  const filteredGroups = useMemo(() => {
+    let result = groupedByLevel;
+
+    // Apply level filter if any levels are selected
+    if (selectedLevels.size > 0) {
+      result = result.filter(([level]) => selectedLevels.has(level));
+    }
+
+    // Apply text filter
+    if (filter) {
+      const lowerFilter = filter.toLowerCase();
+      result = result
+        .map(([level, tiles]) => {
+          const filteredTiles = tiles.filter(tile =>
+            (tile.number && tile.number.toString().includes(lowerFilter)) ||
+            (tile.claim?.allianceName && tile.claim.allianceName.toLowerCase().includes(lowerFilter))
+          );
+          return [level, filteredTiles];
+        })
+        .filter(([, tiles]) => tiles.length > 0);
+    }
+
+    return result;
+  }, [groupedByLevel, filter, selectedLevels]);
+
+  const toggleCollapse = (level) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(level)) {
+        next.delete(level);
+      } else {
+        next.add(level);
+      }
+      return next;
+    });
+  };
+
+  const toggleLevelFilter = (level) => {
+    setSelectedLevels(prev => {
+      const next = new Set(prev);
+      if (next.has(level)) {
+        next.delete(level);
+      } else {
+        next.add(level);
+      }
+      return next;
+    });
+  };
+
+  const clearLevelFilters = () => {
+    setSelectedLevels(new Set());
+  };
+
+  // Get all tile IDs for a level
+  const getTileIdsForLevel = (level) => {
+    const group = groupedByLevel.find(([l]) => l === level);
+    return group ? group[1].map(t => t.id) : [];
+  };
+
+  const isEmpty = filteredGroups.length === 0 || filteredGroups.every(([, tiles]) => tiles.length === 0);
 
   return (
     <div className="w-[400px] max-lg:w-[320px] max-md:hidden bg-discord-gray border-l border-discord-lighter-gray p-4 pt-5 shrink-0 flex flex-col overflow-hidden">
@@ -47,48 +121,98 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
             className="px-3 py-2 border border-discord-lighter-gray rounded text-sm w-full bg-discord-dark text-discord-text placeholder-discord-text-muted transition-colors duration-200 focus:outline-none focus:border-discord-blurple focus:ring-2 focus:ring-discord-blurple/20"
           />
         </div>
+        {availableLevels.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-discord-text-muted">Levels:</span>
+            {availableLevels.map(level => (
+              <label
+                key={level}
+                className="flex items-center gap-1 text-xs cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedLevels.has(level)}
+                  onChange={() => toggleLevelFilter(level)}
+                  className="w-3 h-3 rounded border-discord-lighter-gray bg-discord-dark text-discord-blurple focus:ring-discord-blurple/20 cursor-pointer"
+                />
+                <span className={selectedLevels.has(level) ? 'text-discord-text' : 'text-discord-text-muted'}>
+                  {level !== '' ? level : 'N/A'}
+                </span>
+              </label>
+            ))}
+            {selectedLevels.size > 0 && (
+              <button
+                onClick={clearLevelFilters}
+                className="text-xs text-discord-text-muted hover:text-discord-text underline ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto border border-discord-lighter-gray rounded">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-discord-not-quite-black sticky top-0">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-discord-text-secondary border-b-2 border-discord-lighter-gray">Alliance</th>
-              <th className="px-4 py-3 text-left font-semibold text-discord-text-secondary border-b-2 border-discord-lighter-gray">Level</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTiles.length === 0 ? (
-              <tr>
-                <td colSpan="2" className="text-center text-discord-text-muted italic py-5 px-4">
-                  {filter ? 'No matching tiles' : 'No claimed tiles yet'}
-                </td>
-              </tr>
-            ) : (
-              filteredTiles.map((tile) => (
-                <tr
-                  key={tile.id}
-                  onClick={() => onTileClick(tile)}
-                  className="hover:bg-discord-lighter-gray cursor-pointer transition-colors duration-150"
+        {isEmpty ? (
+          <div className="text-center text-discord-text-muted italic py-5 px-4">
+            {filter ? 'No matching tiles' : 'No claimed tiles yet'}
+          </div>
+        ) : (
+          <div className="divide-y divide-discord-lighter-gray">
+            {filteredGroups.map(([level, tiles]) => {
+              const isCollapsed = collapsedGroups.has(level);
+              return (
+                <div
+                  key={level}
+                  className="transition-colors duration-150"
+                  onMouseEnter={() => onTileHover?.(getTileIdsForLevel(level))}
+                  onMouseLeave={() => onTileHover?.(null)}
                 >
-                  <td className="px-4 py-3 border-b border-discord-lighter-gray text-discord-text">
+                  {/* Level header - clickable to collapse/expand */}
+                  <div
+                    onClick={() => toggleCollapse(level)}
+                    className="px-4 py-2 bg-discord-not-quite-black sticky top-0 flex items-center justify-between cursor-pointer hover:bg-discord-lighter-gray select-none"
+                  >
                     <div className="flex items-center gap-2">
-                      {tile.claim?.color && (
-                        <span
-                          className="w-3 h-3 rounded-full inline-block"
-                          style={{ backgroundColor: tile.claim.color }}
-                        />
-                      )}
-                      {tile.claim?.allianceName}
+                      <span
+                        className={`text-discord-text-muted text-xs transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
+                      >
+                        ▶
+                      </span>
+                      <span className="font-semibold text-discord-text">
+                        {level !== '' ? `Level ${level}` : 'No Level'}
+                      </span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 border-b border-discord-lighter-gray text-discord-text">
-                    {tile.number !== '' ? `L${tile.number}` : '-'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    <span className="text-discord-text-muted text-xs">
+                      {tiles.length} tile{tiles.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {/* Alliances in this level - collapsible */}
+                  {!isCollapsed && (
+                    <div className="divide-y divide-discord-lighter-gray/50">
+                      {tiles.map((tile) => (
+                        <div
+                          key={tile.id}
+                          onClick={() => onTileClick(tile)}
+                          className="px-4 py-2 pl-8 cursor-pointer hover:bg-discord-light-gray transition-colors duration-150"
+                        >
+                          <div className="flex items-center gap-2 text-sm text-discord-text">
+                            {tile.claim?.color && (
+                              <span
+                                className="w-3 h-3 rounded-full inline-block shrink-0"
+                                style={{ backgroundColor: tile.claim.color }}
+                              />
+                            )}
+                            <span className="truncate">{tile.claim?.allianceName}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

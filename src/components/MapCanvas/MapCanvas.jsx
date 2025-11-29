@@ -8,6 +8,7 @@ export function MapCanvas({
   tiles,
   tileClaims,
   selectedTile,
+  hoveredTileIds,
   playbackHighlightTileId,
   onTileClick,
   scale,
@@ -162,6 +163,24 @@ export function MapCanvas({
               listening={false}
             />
           )}
+          {/* Hovered tiles highlight (from list) - cyan glow */}
+          {hoveredTileIds && hoveredTileIds.map(tileId => {
+            const tile = tileGeometry.tiles.find(t => t.id === tileId);
+            if (!tile) return null;
+            return (
+              <Line
+                key={`hover-${tileId}`}
+                points={polygonToPoints(tile.polygon)}
+                stroke="#22d3ee"
+                strokeWidth={3}
+                closed={true}
+                listening={false}
+                shadowColor="#22d3ee"
+                shadowBlur={12}
+                shadowOpacity={0.9}
+              />
+            );
+          })}
           {/* Selected tile highlight - yellow glow */}
           {selectedTile && (
             <Line

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Header } from './components/Header/Header';
 import { MapCanvas } from './components/MapCanvas/MapCanvas';
 import { TileList } from './components/TileList/TileList';
@@ -10,17 +10,27 @@ import { useCanvasControls } from './hooks/useCanvasControls';
 import { useAuth } from './contexts/AuthContext';
 import { useGameState } from './contexts/GameStateContext';
 import { usePlanner } from './contexts/PlannerContext';
+import { useAlliance } from './contexts/AllianceContext';
+import { useTimeline } from './contexts/TimelineContext';
+import { useToast } from './contexts/ToastContext';
 
 function App() {
   const { user } = useAuth();
-  const { tileClaims, loading: gameStateLoading } = useGameState();
+  const { tileClaims, loading: gameStateLoading, claimTile, clearTile, getTileClaim, isOwnTile } = useGameState();
   const {
     isPlannerMode,
     plannedTileClaims,
     isPlaying,
     playbackTileClaims,
-    playbackHighlightTileId
+    playbackHighlightTileId,
+    planClaim,
+    planClear,
+    getPlannedTileClaim,
+    planningAlliance
   } = usePlanner();
+  const { alliance, isAdmin } = useAlliance();
+  const { isViewingCurrentDay } = useTimeline();
+  const { toast } = useToast();
   const isReadOnly = !user;
 
   // Use playback claims during playback, otherwise planned claims in planner mode, otherwise normal claims
@@ -77,6 +87,63 @@ function App() {
     }
   }, [tileGeometry, selectTile]);
 
+  // Handle tile hover from list (can be array of IDs for level grouping)
+  const [hoveredTileIds, setHoveredTileIds] = useState(null);
+  const handleTileListHover = useCallback((tileIds) => {
+    setHoveredTileIds(tileIds);
+  }, []);
+
+  // Keyboard shortcut: 'C' to claim/unclaim selected tile
+  useEffect(() => {
+    const handleKeyDown = async (e) => {
+      // Only handle 'C' key when not typing in an input
+      if (e.key.toLowerCase() !== 'c') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (!selectedTile || !alliance) return;
+
+      // Get claim info - use planner state if in planner mode
+      const currentTileClaim = isPlannerMode
+        ? getPlannedTileClaim(selectedTile.id)
+        : getTileClaim(selectedTile.id);
+
+      // Check ownership - in planner mode, based on planning alliance
+      const currentIsOwned = isPlannerMode
+        ? currentTileClaim?.allianceId === planningAlliance?.id
+        : isOwnTile(selectedTile.id);
+
+      // Determine what action is available (same logic as TileEditor)
+      const canClaim = (isViewingCurrentDay || isPlannerMode || isAdmin) && !currentTileClaim;
+      const canUnclaim = (isViewingCurrentDay || isPlannerMode || isAdmin) && (currentIsOwned || (isAdmin && currentTileClaim));
+
+      if (canClaim) {
+        if (isPlannerMode) {
+          planClaim(selectedTile.id);
+        } else {
+          const result = await claimTile(selectedTile.id, isAdmin);
+          if (!result.success) {
+            toast.error(result.error || 'Failed to claim tile');
+          }
+        }
+      } else if (canUnclaim) {
+        if (isPlannerMode) {
+          planClear(selectedTile.id);
+        } else {
+          const result = await clearTile(selectedTile.id, isAdmin);
+          if (!result.success) {
+            toast.error(result.error || 'Failed to unclaim tile');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    selectedTile, alliance, isPlannerMode, isViewingCurrentDay, isAdmin,
+    getTileClaim, getPlannedTileClaim, isOwnTile, planningAlliance,
+    claimTile, clearTile, planClaim, planClear, toast
+  ]);
+
   // Get current tile data and likes
   const currentTileData = selectedTile ? getTileData(selectedTile.id) : {};
   const currentLikes = selectedTile ? getLikes(selectedTile.id) : [];
@@ -105,6 +172,7 @@ function App() {
           tiles={tiles}
           tileClaims={displayClaims}
           selectedTile={selectedTile}
+          hoveredTileIds={hoveredTileIds}
           playbackHighlightTileId={playbackHighlightTileId}
           onTileClick={handleTileClick}
           scale={scale}
@@ -123,6 +191,7 @@ function App() {
           filter={tileFilter}
           onFilterChange={setTileFilter}
           onTileClick={handleTileListClick}
+          onTileHover={handleTileListHover}
         />
 
         <Sidebar

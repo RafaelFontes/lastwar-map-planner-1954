@@ -5,28 +5,49 @@ import { useAuth } from './AuthContext';
 // Export the context so admin providers can use the same context object
 export const AllianceContext = createContext({});
 
-// Color palette from spec - colors are assigned in order as alliances are created
+// Color palette - Maximally distinct colors for easy visual differentiation
+// Colors are ordered to maximize contrast between adjacent assignments
 const ALLIANCE_COLORS = [
-  '#E74C3C', // Red
-  '#3498DB', // Blue
-  '#2ECC71', // Green
-  '#F39C12', // Orange
-  '#9B59B6', // Purple
-  '#1ABC9C', // Teal
-  '#E91E63', // Pink
-  '#00BCD4', // Cyan
-  '#FF5722', // Deep Orange
-  '#8BC34A', // Light Green
-  '#673AB7', // Deep Purple
-  '#FFC107', // Amber
-  '#795548', // Brown
-  '#607D8B', // Blue Grey
-  '#CDDC39', // Lime
-  '#FF9800', // Orange Alt
-  '#03A9F4', // Light Blue
-  '#4CAF50', // Green Alt
-  '#F44336', // Red Alt
-  '#00E676', // Bright Green
+  '#E53935', // Bright Red
+  '#1E88E5', // Strong Blue
+  '#43A047', // Forest Green
+  '#FB8C00', // Vivid Orange
+  '#8E24AA', // Deep Purple
+  '#00ACC1', // Cyan
+  '#FFD600', // Bright Yellow
+  '#D81B60', // Magenta/Pink
+  '#6D4C41', // Brown
+  '#00E676', // Neon Green
+  '#3949AB', // Indigo
+  '#FF6D00', // Deep Orange
+  '#00897B', // Teal
+  '#C2185B', // Dark Pink
+  '#7CB342', // Lime Green
+  '#5E35B1', // Violet
+  '#039BE5', // Light Blue
+  '#E65100', // Burnt Orange
+  '#00BFA5', // Aqua
+  '#AD1457', // Burgundy
+  '#9E9D24', // Olive
+  '#0277BD', // Ocean Blue
+  '#F4511E', // Coral Red
+  '#1B5E20', // Dark Green
+  '#6A1B9A', // Grape
+  '#FF8F00', // Amber
+  '#00838F', // Dark Cyan
+  '#B71C1C', // Dark Red
+  '#827717', // Dark Lime
+  '#4527A0', // Royal Purple
+  '#EF6C00', // Tangerine
+  '#004D40', // Dark Teal
+  '#880E4F', // Wine
+  '#33691E', // Army Green
+  '#1565C0', // Royal Blue
+  '#BF360C', // Rust
+  '#311B92', // Deep Indigo
+  '#FF6F00', // Mango
+  '#006064', // Petrol
+  '#4A148C', // Plum
 ];
 
 export function AllianceProvider({ children }) {

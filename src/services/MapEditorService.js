@@ -220,18 +220,22 @@ export class MapEditorService {
    * @param {string} params.allianceName - Alliance name
    * @param {string} params.allianceColor - Alliance color
    * @param {number} [params.day] - Day number (optional)
+   * @param {boolean} [params.isAdjustment] - Whether this is an adjustment to a past day
    * @returns {Promise<void>}
    */
-  async addClaimHistory({ tileId, action, user, allianceName, allianceColor, day }) {
-    const details = `${action === 'claim' ? 'claimed' : 'unclaimed'} tile L${tileId}`;
+  async addClaimHistory({ tileId, action, user, allianceName, allianceColor, day, isAdjustment }) {
+    const actionText = action === 'claim' ? 'claimed' : 'unclaimed';
+    const adjustmentText = isAdjustment ? ` (Day ${day} adjustment)` : '';
+    const details = `${actionText} tile L${tileId}${adjustmentText}`;
     const entry = {
-      action,
+      action: isAdjustment ? `${action} (adj)` : action,
       details,
       user,
       allianceName,
       allianceColor,
       tileId,
-      day
+      day,
+      isAdjustment
     };
     await this._historyRepository.add(entry);
   }

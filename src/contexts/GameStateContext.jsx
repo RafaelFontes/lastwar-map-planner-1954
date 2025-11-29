@@ -13,6 +13,7 @@ export function GameStateProvider({ children }) {
   const { displayName } = useProfile();
   const { alliance, getAllianceColor, getAllianceName } = useAlliance();
   const { selectedDay, currentDay, isViewingCurrentDay } = useTimeline();
+  const isViewingPastDay = selectedDay < currentDay;
   const mapEditorService = useMapEditorService();
 
   // Map state: tile claims for selected day
@@ -164,6 +165,7 @@ export function GameStateProvider({ children }) {
           allianceName: alliance.name,
           allianceColor: allianceColor,
           day: selectedDay,
+          isAdjustment: isViewingPastDay,
         });
       } catch (historyError) {
         console.error('Error logging claim history:', historyError);
@@ -178,7 +180,7 @@ export function GameStateProvider({ children }) {
       console.error('Error claiming tile:', error);
       return { success: false, error: error.message };
     }
-  }, [user, alliance, isViewingCurrentDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
+  }, [user, alliance, isViewingCurrentDay, isViewingPastDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
 
   // Clear a tile
   const clearTile = useCallback(async (tileId, isAdmin = false) => {
@@ -225,12 +227,13 @@ export function GameStateProvider({ children }) {
           allianceName: alliance.name,
           allianceColor: allianceColor,
           day: selectedDay,
+          isAdjustment: isViewingPastDay,
         });
       } catch (historyError) {
         console.error('Error logging unclaim history:', historyError);
       }
 
-      // Reload user moves (for undo)
+      // Reload user moves (for undo) - skip for past day adjustments
       await loadUserMoves();
 
       return { success: true };
@@ -238,7 +241,7 @@ export function GameStateProvider({ children }) {
       console.error('Error clearing tile:', error);
       return { success: false, error: error.message };
     }
-  }, [user, alliance, isViewingCurrentDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
+  }, [user, alliance, isViewingCurrentDay, isViewingPastDay, selectedDay, displayName, mapEditorService, getAllianceColor]);
 
   // Undo a move
   const undoMove = useCallback(async (moveId) => {
