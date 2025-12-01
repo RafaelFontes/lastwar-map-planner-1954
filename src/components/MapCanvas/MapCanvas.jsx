@@ -18,7 +18,10 @@ export function MapCanvas({
   stageRef,
   onPanStart,
   onPanMove,
-  onPanEnd
+  onPanEnd,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd
 }) {
   // Track container dimensions in state to trigger re-renders when they change
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -95,14 +98,20 @@ export function MapCanvas({
 
   if (!tileGeometry) {
     return (
-      <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
+      <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:flex-1 max-md:min-h-0" ref={containerRef}>
         <div className="text-discord-text-muted text-base italic">Loading map data...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:h-[60vh]" ref={containerRef}>
+    <div
+      className="flex-1 flex justify-center items-center bg-discord-light-gray overflow-hidden max-md:flex-1 max-md:min-h-0 touch-none"
+      ref={containerRef}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <Stage
         ref={stageRef}
         width={dimensions.width}

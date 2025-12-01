@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
-export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onTileClick, onTileHover }) {
+// Shared content component used by both desktop and mobile
+export function TileListContent({ labeledTiles, tileClaims, filter, onFilterChange, onTileClick, onTileHover, isMobile = false }) {
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [selectedLevels, setSelectedLevels] = useState(new Set());
 
@@ -109,16 +110,15 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
   const isEmpty = filteredGroups.length === 0 || filteredGroups.every(([, tiles]) => tiles.length === 0);
 
   return (
-    <div className="w-[400px] max-lg:w-[320px] max-md:hidden bg-discord-gray border-l border-discord-lighter-gray p-4 pt-5 shrink-0 flex flex-col overflow-hidden">
-      <div className="flex flex-col gap-3 mb-4">
-        <h2 className="m-0 text-base font-semibold text-discord-text">Claimed Tiles</h2>
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col gap-3 p-4 pb-2 shrink-0">
         <div>
           <input
             type="text"
             placeholder="Filter by level or alliance..."
             value={filter}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="px-3 py-2 border border-discord-lighter-gray rounded text-sm w-full bg-discord-dark text-discord-text placeholder-discord-text-muted transition-colors duration-200 focus:outline-none focus:border-discord-blurple focus:ring-2 focus:ring-discord-blurple/20"
+            className="px-3 py-2.5 border border-discord-lighter-gray rounded text-sm w-full bg-discord-dark text-discord-text placeholder-discord-text-muted transition-colors duration-200 focus:outline-none focus:border-discord-blurple focus:ring-2 focus:ring-discord-blurple/20"
           />
         </div>
         {availableLevels.length > 0 && (
@@ -127,13 +127,13 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
             {availableLevels.map(level => (
               <label
                 key={level}
-                className="flex items-center gap-1 text-xs cursor-pointer select-none"
+                className={`flex items-center gap-1.5 text-xs cursor-pointer select-none ${isMobile ? 'py-1 px-2 rounded bg-discord-lighter-gray/50' : ''}`}
               >
                 <input
                   type="checkbox"
                   checked={selectedLevels.has(level)}
                   onChange={() => toggleLevelFilter(level)}
-                  className="w-3 h-3 rounded border-discord-lighter-gray bg-discord-dark text-discord-blurple focus:ring-discord-blurple/20 cursor-pointer"
+                  className="w-4 h-4 rounded border-discord-lighter-gray bg-discord-dark text-discord-blurple focus:ring-discord-blurple/20 cursor-pointer"
                 />
                 <span className={selectedLevels.has(level) ? 'text-discord-text' : 'text-discord-text-muted'}>
                   {level !== '' ? level : 'N/A'}
@@ -151,7 +151,7 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto border border-discord-lighter-gray rounded">
+      <div className="flex-1 overflow-y-auto mx-4 mb-4 border border-discord-lighter-gray rounded">
         {isEmpty ? (
           <div className="text-center text-discord-text-muted italic py-5 px-4">
             {filter ? 'No matching tiles' : 'No claimed tiles yet'}
@@ -164,13 +164,15 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
                 <div
                   key={level}
                   className="transition-colors duration-150"
-                  onMouseEnter={() => onTileHover?.(getTileIdsForLevel(level))}
-                  onMouseLeave={() => onTileHover?.(null)}
+                  onMouseEnter={() => !isMobile && onTileHover?.(getTileIdsForLevel(level))}
+                  onMouseLeave={() => !isMobile && onTileHover?.(null)}
                 >
                   {/* Level header - clickable to collapse/expand */}
                   <div
                     onClick={() => toggleCollapse(level)}
-                    className="px-4 py-2 bg-discord-not-quite-black sticky top-0 flex items-center justify-between cursor-pointer hover:bg-discord-lighter-gray select-none"
+                    className={`px-4 bg-discord-not-quite-black sticky top-0 flex items-center justify-between cursor-pointer select-none ${
+                      isMobile ? 'py-3 active:bg-discord-lighter-gray' : 'py-2 hover:bg-discord-lighter-gray'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -193,7 +195,9 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
                         <div
                           key={tile.id}
                           onClick={() => onTileClick(tile)}
-                          className="px-4 py-2 pl-8 cursor-pointer hover:bg-discord-light-gray transition-colors duration-150"
+                          className={`px-4 pl-8 cursor-pointer transition-colors duration-150 ${
+                            isMobile ? 'py-3 active:bg-discord-light-gray' : 'py-2 hover:bg-discord-light-gray'
+                          }`}
                         >
                           <div className="flex items-center gap-2 text-sm text-discord-text">
                             {tile.claim?.color && (
@@ -214,6 +218,24 @@ export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onT
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Desktop container - hidden on mobile
+export function TileList({ labeledTiles, tileClaims, filter, onFilterChange, onTileClick, onTileHover }) {
+  return (
+    <div className="w-[400px] max-lg:w-[320px] max-md:hidden bg-discord-gray border-l border-discord-lighter-gray pt-4 shrink-0 flex flex-col overflow-hidden">
+      <h2 className="m-0 px-4 mb-2 text-base font-semibold text-discord-text">Claimed Tiles</h2>
+      <TileListContent
+        labeledTiles={labeledTiles}
+        tileClaims={tileClaims}
+        filter={filter}
+        onFilterChange={onFilterChange}
+        onTileClick={onTileClick}
+        onTileHover={onTileHover}
+        isMobile={false}
+      />
     </div>
   );
 }

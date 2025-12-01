@@ -31,6 +31,12 @@ export function useCanvasControls(tileGeometry) {
   const containerRef = useRef(null);
   const stageRef = useRef(null);
 
+  // Touch gesture refs
+  const lastTouchDistance = useRef(null);
+  const lastTouchCenter = useRef(null);
+  const touchStartTime = useRef(null);
+  const isTouchPanning = useRef(false);
+
   // Fit map to screen
   const fitToScreen = useCallback(() => {
     if (!tileGeometry || !containerRef.current) return;
@@ -155,6 +161,128 @@ export function useCanvasControls(tileGeometry) {
     lastPointerPosition.current = null;
   }, []);
 
+  // Touch gesture handlers
+  const getTouchDistance = useCallback((touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
+
+  const getTouchCenter = useCallback((touches) => {
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    const touches = e.touches;
+    touchStartTime.current = Date.now();
+
+    if (touches.length === 2) {
+      // Pinch gesture start
+      e.preventDefault();
+      lastTouchDistance.current = getTouchDistance(touches);
+      lastTouchCenter.current = getTouchCenter(touches);
+      isTouchPanning.current = false;
+    } else if (touches.length === 1) {
+      // Single touch - potential pan
+      isTouchPanning.current = true;
+      lastPointerPosition.current = {
+        x: touches[0].clientX,
+        y: touches[0].clientY
+      };
+    }
+  }, [getTouchDistance, getTouchCenter]);
+
+  const handleTouchMove = useCallback((e) => {
+    const touches = e.touches;
+
+    if (touches.length === 2 && lastTouchDistance.current !== null) {
+      // Pinch to zoom
+      e.preventDefault();
+      const newDistance = getTouchDistance(touches);
+      const newCenter = getTouchCenter(touches);
+
+      // Calculate scale change
+      const scaleChange = newDistance / lastTouchDistance.current;
+      const newScale = Math.min(Math.max(scale * scaleChange, 0.3), 4);
+
+      // Get the container-relative center point
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const centerX = newCenter.x - rect.left;
+        const centerY = newCenter.y - rect.top;
+
+        // Calculate the point on the map that's at the center of the pinch
+        const pointTo = {
+          x: (centerX - position.x) / scale,
+          y: (centerY - position.y) / scale
+        };
+
+        // Calculate new position to keep the center point stationary
+        const newPos = {
+          x: centerX - pointTo.x * newScale,
+          y: centerY - pointTo.y * newScale
+        };
+
+        // Also handle pan during pinch
+        if (lastTouchCenter.current) {
+          const dx = newCenter.x - lastTouchCenter.current.x;
+          const dy = newCenter.y - lastTouchCenter.current.y;
+          newPos.x += dx;
+          newPos.y += dy;
+        }
+
+        setScale(newScale);
+        setPosition(newPos);
+      }
+
+      lastTouchDistance.current = newDistance;
+      lastTouchCenter.current = newCenter;
+    } else if (touches.length === 1 && isTouchPanning.current && lastPointerPosition.current) {
+      // Single touch pan
+      const touch = touches[0];
+      const dx = touch.clientX - lastPointerPosition.current.x;
+      const dy = touch.clientY - lastPointerPosition.current.y;
+
+      setPosition(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }));
+
+      lastPointerPosition.current = {
+        x: touch.clientX,
+        y: touch.clientY
+      };
+      setIsPanning(true);
+    }
+  }, [scale, position, getTouchDistance, getTouchCenter]);
+
+  const handleTouchEnd = useCallback((e) => {
+    const touches = e.touches;
+
+    if (touches.length < 2) {
+      lastTouchDistance.current = null;
+      lastTouchCenter.current = null;
+    }
+
+    if (touches.length === 0) {
+      isTouchPanning.current = false;
+      lastPointerPosition.current = null;
+      setIsPanning(false);
+    } else if (touches.length === 1) {
+      // Transition from pinch to single-touch pan
+      isTouchPanning.current = true;
+      lastPointerPosition.current = {
+        x: touches[0].clientX,
+        y: touches[0].clientY
+      };
+    }
+
+    touchStartTime.current = null;
+  }, []);
+
   return {
     scale,
     position,
@@ -165,6 +293,10 @@ export function useCanvasControls(tileGeometry) {
     fitToScreen,
     handlePanStart,
     handlePanMove,
-    handlePanEnd
+    handlePanEnd,
+    // Touch gesture handlers
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd
   };
 }

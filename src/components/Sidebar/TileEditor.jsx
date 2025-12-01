@@ -5,7 +5,7 @@ import { useTimeline } from '../../contexts/TimelineContext';
 import { usePlanner } from '../../contexts/PlannerContext';
 import { useToast } from '../../contexts/ToastContext';
 
-export function TileEditor({ selectedTile, tileData, likeSummary, onVote, isReadOnly = false }) {
+export function TileEditor({ selectedTile, tileData, likeSummary, onVote, isReadOnly = false, compact = false }) {
   const { claimTile, clearTile, getTileClaim, isOwnTile } = useGameState();
   const { alliance, isAdmin } = useAlliance();
   const { isViewingCurrentDay } = useTimeline();
@@ -53,6 +53,13 @@ export function TileEditor({ selectedTile, tileData, likeSummary, onVote, isRead
   };
 
   if (!selectedTile) {
+    if (compact) {
+      return (
+        <p className="text-discord-text-muted italic text-sm py-1">
+          Tap a tile on the map to view details
+        </p>
+      );
+    }
     return (
       <div className="p-4 pt-5 border-b border-discord-lighter-gray">
         <h2 className="text-base font-semibold mb-4 text-discord-text">Tile Info</h2>
@@ -71,6 +78,62 @@ export function TileEditor({ selectedTile, tileData, likeSummary, onVote, isRead
   // Admin can unclaim any tile (including other alliances'), regular users only their own
   const canUnclaim = alliance && (isViewingCurrentDay || isPlannerMode || isAdmin) && (isOwned || (isAdmin && tileClaim));
   const isClaimedByOther = tileClaim && !isOwned && !isAdmin;
+
+  // Compact mode for mobile
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between gap-3">
+        {/* Left side: Tile info */}
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-discord-text text-lg font-bold shrink-0">
+            L{tileData.number || selectedTile.id}
+          </span>
+          {tileClaim && (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="w-3 h-3 rounded-full inline-block shrink-0"
+                style={{ backgroundColor: tileClaim.color || '#666' }}
+              />
+              <span className="text-discord-text-secondary text-sm truncate">
+                {tileClaim.allianceName}
+              </span>
+            </div>
+          )}
+          {!tileClaim && (
+            <span className="text-discord-text-muted text-sm">Unclaimed</span>
+          )}
+        </div>
+
+        {/* Right side: Action button */}
+        <div className="shrink-0">
+          {canClaim && (
+            <button
+              onClick={handleClaim}
+              className="px-4 py-2 border-none rounded text-sm font-medium cursor-pointer bg-discord-blurple text-white active:bg-discord-blurple-hover"
+            >
+              Claim
+            </button>
+          )}
+          {canUnclaim && (
+            <button
+              onClick={handleUnclaim}
+              className="px-4 py-2 border-none rounded text-sm font-medium cursor-pointer bg-red-500/80 text-white active:bg-red-500"
+            >
+              Unclaim
+            </button>
+          )}
+          {!canClaim && !canUnclaim && (
+            <LikeButton
+              summary={likeSummary || { likes: 0, dislikes: 0, userVote: null }}
+              onVote={(type) => onVote(selectedTile.id, type)}
+              isReadOnly={isReadOnly}
+              compact={true}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pt-5 border-b border-discord-lighter-gray">

@@ -30,9 +30,74 @@ export function Header({ scale, onZoom }) {
   }, [formatTimeRemaining, getTimeUntilNextDay]);
 
   return (
-    <header className="bg-discord-not-quite-black text-white px-8 py-4 flex justify-between items-center shrink-0 border-b border-discord-lighter-gray max-md:flex-col max-md:gap-3 max-md:px-4 max-md:py-3">
-      <h1 className="text-2xl font-semibold m-0 max-md:text-xl">Last War Map Planner</h1>
-      <div className="flex items-center gap-6">
+    <header className="bg-discord-not-quite-black text-white px-8 py-4 flex justify-between items-center shrink-0 border-b border-discord-lighter-gray max-md:px-3 max-md:py-2 landscape-compact-header">
+      {/* Title - hidden on mobile to save space */}
+      <h1 className="text-2xl font-semibold m-0 max-md:hidden">Last War Map Planner</h1>
+
+      {/* Mobile: Compact single row layout */}
+      <div className="hidden max-md:flex items-center justify-between w-full gap-2">
+        {/* Day Navigation - compact */}
+        <div className="flex items-center gap-1">
+          <button
+            className="bg-discord-lighter-gray text-discord-text border-none w-11 h-11 rounded font-bold cursor-pointer transition-all duration-200 flex items-center justify-center active:bg-discord-lightest-gray disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={goToPreviousDay}
+            disabled={selectedDay <= 1}
+            title="Previous Day"
+          >
+            ◀
+          </button>
+          <div className="flex flex-col items-center min-w-[60px]">
+            <span className={`text-sm font-semibold ${isViewingCurrentDay ? 'text-discord-text' : 'text-discord-yellow'}`}>
+              Day {selectedDay}
+            </span>
+            {!isViewingCurrentDay ? (
+              <button
+                className="text-xs text-discord-blurple font-medium"
+                onClick={goToToday}
+              >
+                → Today
+              </button>
+            ) : (
+              <span className="text-xs text-discord-text-muted font-mono">{timeRemaining}</span>
+            )}
+          </div>
+          <button
+            className="bg-discord-lighter-gray text-discord-text border-none w-11 h-11 rounded font-bold cursor-pointer transition-all duration-200 flex items-center justify-center active:bg-discord-lightest-gray disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={goToNextDay}
+            disabled={selectedDay >= currentDay}
+            title="Next Day"
+          >
+            ▶
+          </button>
+        </div>
+
+        {/* Auth - compact on mobile */}
+        {isSupabaseConfigured && (
+          <div className="flex items-center gap-2">
+            {loading ? (
+              <span className="text-discord-text-muted text-sm">...</span>
+            ) : user ? (
+              <button
+                className="text-discord-text text-sm font-medium hover:text-discord-blurple transition-colors cursor-pointer bg-transparent border-none truncate max-w-[100px]"
+                onClick={() => setShowProfileModal(true)}
+                title="Click to edit profile"
+              >
+                {displayName}
+              </button>
+            ) : (
+              <button
+                className="bg-discord-blurple text-white border-none px-3 py-2 rounded text-xs font-medium cursor-pointer transition-all duration-200 active:bg-discord-blurple-hover whitespace-nowrap"
+                onClick={signInWithDiscord}
+              >
+                Sign in
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Full layout */}
+      <div className="flex items-center gap-6 max-md:hidden">
         {/* Timeline Controls */}
         <div className="flex items-center gap-2">
           <button

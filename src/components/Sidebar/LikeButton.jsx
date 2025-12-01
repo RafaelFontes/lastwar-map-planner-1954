@@ -1,8 +1,8 @@
-export function LikeButton({ summary, onVote, isReadOnly = false }) {
+export function LikeButton({ summary, onVote, isReadOnly = false, compact = false }) {
   const { likes, dislikes, userVote } = summary;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
       <button
         onClick={() => onVote('like')}
         disabled={isReadOnly}
