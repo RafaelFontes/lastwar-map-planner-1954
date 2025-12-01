@@ -1,15 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { usePlanner } from '../../contexts/PlannerContext';
 import { useAlliance } from '../../contexts/AllianceContext';
 import { useTimeline } from '../../contexts/TimelineContext';
-
-const SPEED_OPTIONS = [
-  { label: '0.25x', value: 4000 },
-  { label: '0.5x', value: 2000 },
-  { label: '1x', value: 1000 },
-  { label: '2x', value: 500 },
-  { label: '4x', value: 250 },
-];
 
 export function PlannerPanel({ tiles }) {
   const {
@@ -33,104 +25,19 @@ export function PlannerPanel({ tiles }) {
   const { alliance, allAlliances } = useAlliance();
   const { currentDay } = useTimeline();
   const [copied, setCopied] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1000); // Default 1s
-  const playIntervalRef = useRef(null);
-  const speedRef = useRef(playbackSpeed);
 
-  // Keep speed ref in sync
-  useEffect(() => {
-    speedRef.current = playbackSpeed;
-  }, [playbackSpeed]);
-
-  // Clear interval helper
-  const clearPlayInterval = useCallback(() => {
-    if (playIntervalRef.current) {
-      clearInterval(playIntervalRef.current);
-      playIntervalRef.current = null;
-    }
-  }, []);
-
-  // Start interval helper
-  const startPlayInterval = useCallback(() => {
-    clearPlayInterval();
-    playIntervalRef.current = setInterval(() => {
-      setPlayIndex(prev => {
-        if (prev >= sequence.length - 1) {
-          setIsPlaying(false);
-          clearPlayInterval();
-          return prev; // Stay at last item
-        }
-        return prev + 1;
-      });
-    }, speedRef.current);
-  }, [sequence.length, setPlayIndex, setIsPlaying, clearPlayInterval]);
-
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => clearPlayInterval();
-  }, [clearPlayInterval]);
-
-  // Restart interval when speed changes while playing
-  useEffect(() => {
-    if (isPlaying) {
-      startPlayInterval();
-    }
-  }, [playbackSpeed, isPlaying, startPlayInterval]);
-
-  // Stop when playback reaches end
-  useEffect(() => {
-    if (playIndex >= sequence.length && sequence.length > 0) {
-      setIsPlaying(false);
-      setPlayIndex(sequence.length - 1);
-      clearPlayInterval();
-    }
-  }, [playIndex, sequence.length, setIsPlaying, setPlayIndex, clearPlayInterval]);
-
-  // Play/Pause toggle
-  const handlePlayPause = useCallback(() => {
+  // Start/Stop playback overlay (manual stepping only)
+  const handleStartPlayback = useCallback(() => {
     if (sequence.length === 0) return;
+    setPlayIndex(0);
+    setIsPlaying(true);
+  }, [sequence.length, setIsPlaying, setPlayIndex]);
 
-    if (isPlaying) {
-      // Pause
-      setIsPlaying(false);
-      clearPlayInterval();
-    } else {
-      // Play - start from beginning if at end or not started
-      const startIdx = playIndex < 0 || playIndex >= sequence.length - 1 ? 0 : playIndex;
-      setPlayIndex(startIdx);
-      setIsPlaying(true);
-      startPlayInterval();
-    }
-  }, [sequence.length, isPlaying, playIndex, setIsPlaying, setPlayIndex, clearPlayInterval, startPlayInterval]);
-
-  // Stop playback and reset
-  const handleStop = useCallback(() => {
+  // Stop playback and close overlay
+  const handleStopPlayback = useCallback(() => {
     setIsPlaying(false);
     setPlayIndex(-1);
-    clearPlayInterval();
-  }, [setIsPlaying, setPlayIndex, clearPlayInterval]);
-
-  // Step backward
-  const handleStepBackward = useCallback(() => {
-    if (sequence.length === 0) return;
-    setPlayIndex(prev => Math.max(0, Math.max(0, prev) - 1));
-  }, [sequence.length, setPlayIndex]);
-
-  // Step forward
-  const handleStepForward = useCallback(() => {
-    if (sequence.length === 0) return;
-    setPlayIndex(prev => Math.min(sequence.length - 1, (prev < 0 ? 0 : prev + 1)));
-  }, [sequence.length, setPlayIndex]);
-
-  // Seek to position (progress bar click)
-  const handleSeek = useCallback((e) => {
-    if (sequence.length === 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = x / rect.width;
-    const newIndex = Math.round(percent * (sequence.length - 1));
-    setPlayIndex(Math.max(0, Math.min(sequence.length - 1, newIndex)));
-  }, [sequence.length, setPlayIndex]);
+  }, [setIsPlaying, setPlayIndex]);
 
   const handleCopyShareUrl = async () => {
     try {
@@ -329,118 +236,28 @@ export function PlannerPanel({ tiles }) {
 
         {/* Playback Controls */}
         {sequence.length > 0 && (
-          <div className="mb-3 p-2 bg-discord-dark/50 rounded-lg">
-            {/* Progress Bar */}
-            <div
-              className="h-2 bg-discord-lighter-gray rounded-full mb-2 cursor-pointer relative overflow-hidden"
-              onClick={handleSeek}
-            >
-              <div
-                className="h-full bg-discord-blurple rounded-full transition-all duration-150"
-                style={{
-                  width: playIndex >= 0
-                    ? `${((playIndex + 1) / sequence.length) * 100}%`
-                    : '0%'
-                }}
-              />
-              {/* Tick marks for each step */}
-              <div className="absolute inset-0 flex justify-between px-0.5">
-                {sequence.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-0.5 h-full ${
-                      idx <= playIndex ? 'bg-discord-blurple-hover' : 'bg-discord-gray/50'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex items-center justify-center gap-1">
-              {/* Stop/Reset */}
+          <div className="mb-3">
+            {isPlaying ? (
               <button
-                onClick={handleStop}
-                className="p-1.5 text-discord-text-muted hover:text-discord-text rounded hover:bg-discord-lighter-gray transition-colors"
-                title="Stop and reset"
+                onClick={handleStopPlayback}
+                className="w-full px-3 py-2 bg-red-500/20 text-red-400 rounded text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="6" width="12" height="12" rx="1" />
                 </svg>
+                Stop Playback
               </button>
-
-              {/* Step Backward */}
+            ) : (
               <button
-                onClick={handleStepBackward}
-                disabled={playIndex <= 0}
-                className="p-1.5 text-discord-text-muted hover:text-discord-text rounded hover:bg-discord-lighter-gray transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Previous step"
+                onClick={handleStartPlayback}
+                className="w-full px-3 py-2 bg-green-500/20 text-green-400 rounded text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z" />
+                  <path d="M8 5v14l11-7z" />
                 </svg>
+                Start Playback
               </button>
-
-              {/* Play/Pause */}
-              <button
-                onClick={handlePlayPause}
-                className={`p-2 rounded-full transition-colors ${
-                  isPlaying
-                    ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
-                    : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                }`}
-                title={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <rect x="6" y="5" width="4" height="14" rx="1" />
-                    <rect x="14" y="5" width="4" height="14" rx="1" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Step Forward */}
-              <button
-                onClick={handleStepForward}
-                disabled={playIndex >= sequence.length - 1}
-                className="p-1.5 text-discord-text-muted hover:text-discord-text rounded hover:bg-discord-lighter-gray transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Next step"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18 6h-2v12h2V6zM8 6l8.5 6L8 18V6z" />
-                </svg>
-              </button>
-
-              {/* Spacer */}
-              <div className="w-2" />
-
-              {/* Speed Control */}
-              <select
-                value={playbackSpeed}
-                onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-                className="px-1.5 py-1 bg-discord-lighter-gray border-none rounded text-xs text-discord-text focus:outline-none focus:ring-1 focus:ring-discord-blurple cursor-pointer"
-                title="Playback speed"
-              >
-                {SPEED_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Current position indicator */}
-            <div className="text-center text-xs text-discord-text-muted mt-1.5">
-              {playIndex >= 0 ? (
-                <span>Step {playIndex + 1} of {sequence.length}</span>
-              ) : (
-                <span>Ready to play</span>
-              )}
-            </div>
+            )}
           </div>
         )}
 

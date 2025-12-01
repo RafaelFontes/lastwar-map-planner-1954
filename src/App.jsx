@@ -6,6 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { ProfileModal } from './components/ProfileModal/ProfileModal';
 import { AllianceModal } from './components/AllianceModal/AllianceModal';
 import { MobileDrawer } from './components/MobileDrawer/MobileDrawer';
+import { PlaybackOverlay } from './components/PlaybackOverlay/PlaybackOverlay';
 import { useMapEditor } from './hooks/useMapEditor';
 import { useCanvasControls } from './hooks/useCanvasControls';
 import { useAuth } from './contexts/AuthContext';
@@ -180,6 +181,7 @@ function App() {
     <div className="w-full h-screen flex flex-col bg-discord-dark overflow-hidden">
       <ProfileModal />
       <AllianceModal />
+      <PlaybackOverlay />
       <Header scale={scale} onZoom={zoom} />
 
       <div className="flex flex-1 overflow-hidden max-md:flex-col max-md:min-h-0">
